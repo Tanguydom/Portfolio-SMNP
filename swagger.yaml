@@ -1,0 +1,531 @@
+openapi: 3.0.0
+info:
+  title: Movie API
+  description: API permettant de récupérer des films tendance, populaires, et à venir, ainsi que d'envoyer des e-mails.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      name: x-api-key
+      in: header
+  schemas:
+    Film:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Identifiant unique du film.
+          example: 123
+        title:
+          type: string
+          description: Titre du film.
+          example: Inception
+        overview:
+          type: string
+          description: Synopsis du film.
+          example: Un voleur qui s'infiltre dans les rêves pour dérober des secrets...
+        release_date:
+          type: string
+          format: date
+          description: Date de sortie du film.
+          example: 2010-07-16
+    Erreur:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Description de l'erreur.
+          example: Une erreur est survenue lors de la récupération des films.
+
+paths:
+  /email/sendEmail:
+    post:
+      summary: Envoi d'un e-mail
+      description: Envoie un e-mail en utilisant le nom, l'adresse e-mail et le message fournis.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                  description: Le nom de l'expéditeur.
+                email:
+                  type: string
+                  example: john.doe@example.com
+                  description: L'adresse e-mail de l'expéditeur.
+                message:
+                  type: string
+                  example: Bonjour, ceci est un message test.
+                  description: Contenu du message.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: L'e-mail a été envoyé avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: string
+                    example: Message envoyé avec succès.
+        '400':
+          description: Requête invalide. Champs manquants (nom, e-mail ou message).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Veuillez fournir le nom, l'e-mail et le message.
+        '403':
+          description: Accès refusé. Clé API non autorisée.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Accès refusé : Clé API non valide.
+        '500':
+          description: Erreur interne du serveur. Échec de l'envoi de l'e-mail.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Échec de l'envoi du message.
+
+  /movies/trending/movie/week:
+    get:
+      summary: Récupération des films tendance
+      description: Récupère la liste des films tendance pour la semaine depuis TMDb.
+      tags:
+        - Films
+      responses:
+        '200':
+          description: Liste des films tendance.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Film'
+        '500':
+          description: Erreur interne du serveur.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+
+  /movies/movie/popular:
+    get:
+      summary: Récupération des films populaires
+      description: Retourne une liste des films les plus populaires actuellement.
+      tags:
+        - Films
+      responses:
+        '200':
+          description: Liste des films populaires récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Film'
+        '500':
+          description: Erreur interne du serveur lors de la récupération des films populaires.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+
+  /movies/movie/upcoming:
+    get:
+      summary: Récupération des films à venir
+      description: Récupère une liste des films à venir depuis TMDb.
+      tags:
+        - Films
+      responses:
+        '200':
+          description: Liste des films à venir récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Film'
+        '500':
+          description: Erreur interne du serveur lors de la récupération des films à venir.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+  /movies/{type}/{id}:
+    get:
+      summary: Récupération des détails d'un film ou d'une série
+      description: Récupère les détails d'un film ou d'une série en fonction de son type (`movie` ou `tv`) et de son identifiant.
+      tags:
+        - Détails
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Type de média (`movie` pour les films, `tv` pour les séries).
+          schema:
+            type: string
+            enum: [ movie, tv ]
+            example: movie
+        - name: id
+          in: path
+          required: true
+          description: Identifiant unique du film ou de la série.
+          schema:
+            type: integer
+            example: 550
+      responses:
+        '200':
+          description: Détails du film ou de la série récupérés avec succès.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Film'
+        '404':
+          description: Film ou série non trouvé(e).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+        '500':
+          description: Erreur interne du serveur.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+  /movies/{type}/{id}/credits:
+    get:
+      summary: Récupération des crédits d'un film ou d'une série
+      description: Récupère la liste des crédits d'un film ou d'une série en fonction de son type (`movie` ou `tv`) et de son identifiant.
+      tags:
+        - Détails
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Type de média (`movie` pour les films, `tv` pour les séries).
+          schema:
+            type: string
+            enum: [ movie, tv ]
+            example: movie
+        - name: id
+          in: path
+          required: true
+          description: Identifiant unique du film ou de la série.
+          schema:
+            type: integer
+            example: 550
+      responses:
+        '200':
+          description: Liste des crédits récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cast:
+                    type: array
+                    description: Liste des membres du casting.
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Nom de l'acteur.
+                          example: Brad Pitt
+                        character:
+                          type: string
+                          description: Rôle interprété par l'acteur.
+                          example: Tyler Durden
+                  crew:
+                    type: array
+                    description: Liste des membres de l'équipe technique.
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Nom du membre de l'équipe.
+                          example: David Fincher
+                        job:
+                          type: string
+                          description: Fonction du membre de l'équipe.
+                          example: Director
+        '404':
+          description: Film ou série non trouvé(e).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Film ou série non trouvé(e).
+        '500':
+          description: Erreur interne du serveur.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Une erreur est survenue lors de la récupération des crédits.
+  /movies/{type}/{id}/trailers:
+    get:
+      summary: Récupération des bandes-annonces d'un film ou d'une série
+      description: Récupère la liste des bandes-annonces associées à un film ou une série en fonction de son type (`movie` ou `tv`) et de son identifiant.
+      tags:
+        - Détails
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Type de média (`movie` pour les films, `tv` pour les séries).
+          schema:
+            type: string
+            enum: [ movie, tv ]
+            example: movie
+        - name: id
+          in: path
+          required: true
+          description: Identifiant unique du film ou de la série.
+          schema:
+            type: integer
+            example: 550
+      responses:
+        '200':
+          description: Liste des bandes-annonces récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    description: Liste des bandes-annonces.
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Identifiant unique de la bande-annonce.
+                          example: abc123
+                        name:
+                          type: string
+                          description: Titre de la bande-annonce.
+                          example: Official Trailer
+                        key:
+                          type: string
+                          description: Clé YouTube pour lire la vidéo.
+                          example: 5PSNL1qE6VY
+                        site:
+                          type: string
+                          description: Plateforme où la vidéo est disponible (YouTube, Vimeo, etc.).
+                          example: YouTube
+                        type:
+                          type: string
+                          description: Type de vidéo (Trailer, Clip, Featurette, etc.).
+                          example: Trailer
+        '404':
+          description: Film ou série non trouvé(e).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Film ou série non trouvé(e).
+        '500':
+          description: Erreur interne du serveur.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Une erreur est survenue lors de la récupération des bandes-annonces.
+  /movies/{type}/{id}/reviews:
+    get:
+      summary: Récupération des critiques d'un film ou d'une série
+      description: Récupère la liste des critiques associées à un film ou une série en fonction de son type (`movie` ou `tv`) et de son identifiant.
+      tags:
+        - Détails
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Type de média (`movie` pour les films, `tv` pour les séries).
+          schema:
+            type: string
+            enum: [ movie, tv ]
+            example: movie
+        - name: id
+          in: path
+          required: true
+          description: Identifiant unique du film ou de la série.
+          schema:
+            type: integer
+            example: 550
+      responses:
+        '200':
+          description: Liste des critiques récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Identifiant du film ou de la série.
+                    example: 550
+                  page:
+                    type: integer
+                    description: Page des résultats.
+                    example: 1
+                  results:
+                    type: array
+                    description: Liste des critiques.
+                    items:
+                      type: object
+                      properties:
+                        author:
+                          type: string
+                          description: Nom de l'auteur de la critique.
+                          example: John Doe
+                        content:
+                          type: string
+                          description: Contenu de la critique.
+                          example: Ce film est un chef-d'œuvre du début à la fin !
+                        created_at:
+                          type: string
+                          format: date-time
+                          description: Date de publication de la critique.
+                          example: 2023-01-01T12:00:00Z
+                        rating:
+                          type: number
+                          format: float
+                          description: Note donnée par l'auteur.
+                          example: 8.5
+        '404':
+          description: Film ou série non trouvé(e).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Film ou série non trouvé(e).
+        '500':
+          description: Erreur interne du serveur.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Une erreur est survenue lors de la récupération des critiques.
+  /movies/{type}/{id}/recommendations:
+    get:
+      summary: Récupération des recommandations pour un film ou une série
+      description: Récupère une liste de recommandations basées sur un film ou une série en fonction de son type (`movie` ou `tv`) et de son identifiant.
+      tags:
+        - Recommandations
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Type de média (`movie` pour les films, `tv` pour les séries).
+          schema:
+            type: string
+            enum: [ movie, tv ]
+            example: movie
+        - name: id
+          in: path
+          required: true
+          description: Identifiant unique du film ou de la série.
+          schema:
+            type: integer
+            example: 550
+      responses:
+        '200':
+          description: Liste des recommandations récupérée avec succès.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      description: Identifiant du média recommandé.
+                      example: 12345
+                    title:
+                      type: string
+                      description: Titre du média recommandé.
+                      example: Interstellar
+                    overview:
+                      type: string
+                      description: Synopsis du média recommandé.
+                      example: Un groupe d'explorateurs voyage à travers un trou de ver dans l'espace afin d'assurer la survie de l'humanité.
+                    release_date:
+                      type: string
+                      format: date
+                      description: Date de sortie du média recommandé.
+                      example: 2014-11-07
+                    vote_average:
+                      type: number
+                      format: float
+                      description: Note moyenne du média recommandé.
+                      example: 8.6
+        '404':
+          description: Média non trouvé.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Film ou série non trouvé(e).
+        '500':
+          description: Erreur interne du serveur.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Une erreur est survenue lors de la récupération des recommandations.
+
+
+
+
