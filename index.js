@@ -28,8 +28,8 @@ const corsOptions = {
     origin: [
         'http://localhost:3000',       // Accès direct (dev)
         'http://localhost:8081',       // Accès direct (dev)
-        'http://localhost/portfolio',  // Via le reverse proxy (prod)
-        'http://localhost/ruinard'     // Via le reverse proxy (prod)
+        'http://tanguy-domergue.fr/portfolio',  // Via le reverse proxy (prod)
+        'http://tanguy-domergue.fr/movies'     // Via le reverse proxy (prod)
       ],
        // Liste des origines autorisées
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
