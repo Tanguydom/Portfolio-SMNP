@@ -26,9 +26,8 @@ app.use(express.json());
 // Configure CORS to allow requests from http://localhost:3000
 const corsOptions = {
     origin: [
-        'http://localhost:3000',       // Accès direct (dev)
-        'http://localhost:8081',       // Accès direct (dev)
-        'http://tanguy-domergue.fr/portfolio',  // Via le reverse proxy (prod)
+      // Accès direct (dev)
+        'http://tanguy-domergue.fr',  // Via le reverse proxy (prod)
         'http://tanguy-domergue.fr/movies'     // Via le reverse proxy (prod)
       ],
        // Liste des origines autorisées
